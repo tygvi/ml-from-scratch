@@ -84,32 +84,21 @@ class DecisionTreeClassifier:
             best_gain = gain
             best_threshold = threshold
       return best_threshold, best_gain
-
+        
     def build_tree(self, X, y, depth=0):
-
-    # Stop if maximum depth is reached
       if self.max_depth is not None and depth >= self.max_depth:
         majority = Counter(y).most_common(1)[0][0]
         return Node(value=majority)
-
-    # Stop if too few samples
       if len(y) < self.min_samples_split:
         majority = Counter(y).most_common(1)[0][0]
         return Node(value=majority)
-
-    # Stop if node is pure
       if len(set(y)) == 1:
         return Node(value=y[0])
-
-    # Find the best split
       threshold, gain = self.best_split(X, y)
-
-    # Stop if no useful split exists
       if gain <= 0:
         majority = Counter(y).most_common(1)[0][0]
         return Node(value=majority)
-
-    # Split the dataset
+      
       left_X = []
       left_y = []
       right_X = []
@@ -126,25 +115,18 @@ class DecisionTreeClassifier:
       left_y = np.array(left_y)
       right_X = np.array(right_X)
       right_y = np.array(right_y)
-
-    # Build left and right subtrees
       left_child = self.build_tree(left_X, left_y, depth + 1)
       right_child = self.build_tree(right_X, right_y, depth + 1)
-
-    # Return the current node
       return Node(
         threshold=threshold,
         left=left_child,
         right=right_child
     )
-
     def predict(self, X):
        X = np.asarray(X)
        predictions = []
-
        for x in X:
         predictions.append(self._predict(x, self.root))
-
        return np.array(predictions)
     
     def _predict(self, x, node):   
