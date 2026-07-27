@@ -9,19 +9,25 @@ class Node:
         self.value = value
         
 class DecisionTreeClassifier:
-    def __init__(self, criterion='gini', max_depth=None, min_samples_split=2):
-        self.criterion = criterion         
-        self.max_depth = max_depth         
-        self.min_samples_split = min_samples_split  
+    def __init__(self, criterion='gini', max_depth=None, min_samples_split=2): #When called, it will tell the function which impurity to apply
+        self.criterion = criterion #       
+        self.max_depth = max_depth #It limits the maximum depth of the tree from the root to any of the leaves, preventing it from becoming overly complex        
+        self.min_samples_split = min_samples_split #A node must contain at least this much samples before it is allowed to split. 
         self.root = None
 
         
+# Train the Decision Tree on the given dataset.
+# The input data is converted to NumPy arrays, after which the recursive build_tree() function constructs the entire tree.
+# Returns self to support method chaining.
+    
     def fit(self,X,y):
         X = np.asarray(X)
         y = np.asarray(y)
         self.root=self.build_tree(X,y)
         return self
 
+    # Calculates the entropy of a node.
+    # Lower entropy indicates a purer node with fewer mixed classes.
     def entropy(self,y):
         problist=[]
         tsum=0
@@ -34,7 +40,9 @@ class DecisionTreeClassifier:
                ent=(-1)*problist[u]*np.log2(problist[u])
                tsum=tsum+ent
         return tsum
-    
+        
+    # Calculates the Gini impurity of a node.
+    # A lower Gini score means the node contains mostly one class.
     def gini(self,y):
         problist=[]
         tsum=0
@@ -47,7 +55,11 @@ class DecisionTreeClassifier:
                ginii=problist[u]*(1-problist[u])
                tsum=tsum+ginii
         return tsum
-        
+
+    # Calculates the reduction in impurity after a split.
+    # The parent impurity is compared against the weighted impurity
+    # of the left and right child nodes. A higher information gain
+    # indicates a better split.
     def information_gain(self,y,left_y,right_y):
         if self.criterion=="entropy":
            parent_impurity=self.entropy(y)
@@ -66,7 +78,8 @@ class DecisionTreeClassifier:
         weighted_impurity=(left_w*left_impurity)+(right_w*right_impurity)
         gain=parent_impurity-weighted_impurity
         return gain
-    
+
+
     def best_split(self, X, y):
       best_gain = -float("inf")
       best_threshold = None
@@ -122,6 +135,9 @@ class DecisionTreeClassifier:
         left=left_child,
         right=right_child
     )
+     
+     # Predicts the class labels for all input samples by
+     # traversing the trained Decision Tree.
     def predict(self, X):
        X = np.asarray(X)
        predictions = []
