@@ -26,7 +26,7 @@ class DecisionTreeClassifier:
         self.root=self.build_tree(X,y)
         return self
 
-    # Calculates the entropy of a node.
+    # Calculate the entropy of a node.
     # Lower entropy indicates a purer node with fewer mixed classes.
     def entropy(self,y):
         problist=[]
