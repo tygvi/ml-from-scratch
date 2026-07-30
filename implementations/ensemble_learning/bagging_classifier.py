@@ -2,8 +2,9 @@ import numpy as np
 from collections import Counter
 
 class Node:
-    def __init__(self, threshold=None, left=None, right=None, value=None):
+    def __init__(self, threshold=None,feature=None, left=None, right=None, value=None):
         self.threshold = threshold
+        self.feature= feature
         self.left = left
         self.right = right
         self.value = value
@@ -26,7 +27,7 @@ class DecisionTreeClassifier:
         self.root=self.build_tree(X,y)
         return self
 
-    # Calculates the entropy of a node.
+    # Calculate the entropy of a node.
     # Lower entropy indicates a purer node with fewer mixed classes.
     def entropy(self,y):
         problist=[]
@@ -81,22 +82,26 @@ class DecisionTreeClassifier:
 
 
     def best_split(self, X, y):
-      best_gain = -float("inf")
-      best_threshold = None
-      values = np.sort(np.unique(X))
-      thresholds = (values[:-1] + values[1:]) / 2
-      for threshold in thresholds:
-        left_mask = X < threshold
-        right_mask = X >= threshold
-        left_y = y[left_mask]
-        right_y = y[right_mask]
-        if len(left_y) == 0 or len(right_y) == 0:
-            continue
-        gain = self.information_gain(y, left_y, right_y)
-        if gain > best_gain:
-            best_gain = gain
-            best_threshold = threshold
-      return best_threshold, best_gain
+      best_gain= -float("inf")
+      best_feature=-float("-inf")
+      best_threshold= None
+      for o in range(X.shape[1]):
+            column=X[:,o]
+            values=np.sort(np.unique(column))
+            thresh=((values[:-1]+values[1:])/2)
+            for threshold in thresh:
+                left_mask = X[:,o] < threshold
+                right_mask = X[:,o] >= threshold
+                left_y = y[left_mask]
+                right_y = y[right_mask]
+                if len(left_y) == 0 or len(right_y) == 0:
+                  continue
+                gain = self.information_gain(y,left_y,right_y)
+                if gain > best_gain:
+                   best_gain = gain
+                   best_feature=o 
+                   best_threshold = threshold
+      return best_feature, best_threshold, best_gain
         
     def build_tree(self, X, y, depth=0):
       if self.max_depth is not None and depth >= self.max_depth:
@@ -107,7 +112,7 @@ class DecisionTreeClassifier:
         return Node(value=majority)
       if len(set(y)) == 1:
         return Node(value=y[0])
-      threshold, gain = self.best_split(X, y)
+      feature, threshold, gain = self.best_split(X, y)
       if gain <= 0:
         majority = Counter(y).most_common(1)[0][0]
         return Node(value=majority)
@@ -118,7 +123,7 @@ class DecisionTreeClassifier:
       right_y = []
 
       for i in range(len(X)):
-        if X[i] < threshold:
+        if X[i,feature] < threshold:
             left_X.append(X[i])
             left_y.append(y[i])
         else:
@@ -133,7 +138,8 @@ class DecisionTreeClassifier:
       return Node(
         threshold=threshold,
         left=left_child,
-        right=right_child
+        right=right_child,
+        feature=feature
     )
      
      # Predicts the class labels for all input samples by
@@ -148,16 +154,14 @@ class DecisionTreeClassifier:
     def _predict(self, x, node):   
       if node.value is not None:
         return node.value
-      if x < node.threshold:
+      if x[node.feature] < node.threshold:
         return self._predict(x, node.left)
       else:
         return self._predict(x, node.right)
-        
-        
-class RandomForestClassifier:
-    def __init__(self,n_estimators=100
+class BaggingClassifier:
+    def __init__(self,n_estimators=100,
                  max_depth=None,
-                 criterion="gini"
+                 criterion="gini",
                  min_samples_split=2,
                  max_features=None,
                  random_state=None):
@@ -171,16 +175,20 @@ class RandomForestClassifier:
     
 
 
-    def fit():
+    def fit(self,X,y):
+        X = np.asarray(X)
+        y = np.asarray(y)
         self.trees=[]
+        if self.random_state is not None:
+            np.random.seed(self.random_state)
         for _ in range(self.n_estimators):
             X_boot,y_boot=self._bootstrap_sample(X,y)
-            tree=decisiontreeclassifier(max_depth=self.max_depth,
+            tree=DecisionTreeClassifier(max_depth=self.max_depth,
                                         criterion=self.criterion,
-                                        min_samples_split-self.min_samples_split,)
+                                        min_samples_split=self.min_samples_split,)
             tree.fit(X_boot,y_boot)
             self.trees.append(tree)
-    return self
+     return self
 
     def _bootstrap_sample(self,X,y):
         n_samples=X.shape[0]
@@ -188,10 +196,12 @@ class RandomForestClassifier:
         X_boot=X[indices]
         y_boot=y[indices]
         return X_boot,y_boot
-    def _majority_vote(self,prediction)
+    def _majority_vote(self,predictions):
         values,counts=np.unique(predictions,return_counts=True)
         return values[np.argmax(counts)]
     def predict(self,X):
+        X = np.asarray(X)
+        y = np.asarray(y)
         predictions=[]
         for tree in self.trees:
             predictions.append(tree.predict(X))
@@ -201,5 +211,5 @@ class RandomForestClassifier:
             final_predictions.append(
             self._majority_vote(sample_predictions)
         )
-    return np.array(final_predictions)
+        return np.array(final_predictions)
     
